@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Selection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        .item-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .item-card.selected {
+            border-color: #facc15; /* border-yellow-400 */
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+        }
+        .item-card img {
+            aspect-ratio: 1 / 1;
+        }
+        .modal-content {
+            background-color: #1f2937; /* bg-gray-800 */
+        }
+        .progress-bar-inner {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-wider uppercase text-purple-400">STEAL A BRAINROT</h1>
+        </header>
+
+        <main id="item-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+            <!-- Items will be added here via JavaScript -->
+        </main>
+        
+        <footer class="fixed bottom-0 left-0 right-0 bg-gray-800/80 backdrop-blur-sm p-4 border-t border-gray-700">
+            <div class="container mx-auto flex justify-between items-center">
+                <p class="text-lg font-semibold">Selected: <span id="selected-count">0</span>/3</p>
+                <button id="continue-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-colors" disabled>
+                    Continue
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+        <div class="modal-content w-full max-w-md p-6 rounded-2xl shadow-lg border border-gray-700">
+            <!-- Step 1: Account Search -->
+            <div id="account-search-step">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Find Your Account</h2>
+                    <button id="close-modal-btn" class="text-gray-400 hover:text-white">&times;</button>
+                </div>
+                <p class="text-gray-400 mb-4">Enter your Roblox username.</p>
+                <div class="space-y-4">
+                    <input type="text" id="username-input" placeholder="Your Username" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button id="search-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors">Search</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Account Found -->
+            <div id="account-found-step" class="hidden text-center">
+                 <h2 class="text-2xl font-bold mb-2">User Found!</h2>
+                 <p id="found-username" class="bg-gray-700 text-yellow-300 py-2 px-4 rounded-lg mb-4 inline-block"></p>
+                 <button id="claim-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">Claim For This User</button>
+            </div>
+
+            <!-- Step 3: Syncing -->
+            <div id="sync-step" class="hidden">
+                <h2 class="text-2xl font-bold text-center mb-4">Syncing items...</h2>
+                <div id="selected-items-preview" class="flex justify-center items-center gap-4 mb-4">
+                    <!-- Selected item images -->
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-6 mb-2">
+                    <div id="progress-bar" class="progress-bar-inner h-6 rounded-full text-center text-sm flex items-center justify-center" style="width: 0%;">0%</div>
+                </div>
+                <p class="text-center text-gray-400 text-sm">This is the final step. Do not refresh or close the page.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = [
+                // Отправляйте мне название и ссылку на картинку, и я добавлю их сюда.
+                // Пример:
+                // { id: 1, name: 'Название предмета', imageUrl: 'https://example.com/image.png' },
+                { id: 1, name: 'Buhodefuego', imageUrl: 'https://i.postimg.cc/HsZbM50k/Buhodefuego.webp' },
+                { id: 2, name: 'Vampira capucinna', imageUrl: 'https://i.postimg.cc/W1Zt4JXY/Vampira-capucinna-image.webp' },
+                { id: 3, name: 'Zombietralala', imageUrl: 'https://i.postimg.cc/ncCG00hc/Zombie-Tralala-1.webp' },
+                { id: 4, name: 'Frankenmatteo', imageUrl: 'https://i.postimg.cc/sgCswH4K/Frankenmatteo.webp' },
+                { id: 5, name: 'La Vacca Jacko Linterino', imageUrl: 'https://i.postimg.cc/3xw5SMD4/Jacko-Vacca.webp' },
+                { id: 6, name: 'Spooky Grande', imageUrl: 'https://i.postimg.cc/WbHXvxHF/Spooky-Grande.webp' },
+                { id: 7, name: 'Noo My Examen', imageUrl: 'https://i.postimg.cc/2SNLhwbm/Noo-My-Examen.webp' },
+                { id: 8, name: 'LosPrimos', imageUrl: 'https://i.postimg.cc/8C06JVLs/Los-Primos.webp' },
+                { id: 9, name: 'My kids will also rob you', imageUrl: 'https://i.postimg.cc/XYvqwzN3/My-kids-will-also-rob-you.webp' },
+                { id: 10, name: 'Las Sis', imageUrl: 'https://i.postimg.cc/L5NR5m16/Las-Sis.webp' },
+                { id: 11, name: 'Los_shitheaditos', imageUrl: 'https://i.postimg.cc/RFSDFKQM/Los-shitheaditos.webp' },
+            ];
+
+            const itemGrid = document.getElementById('item-grid');
+            const selectedCountEl = document.getElementById('selected-count');
+            const continueBtn = document.getElementById('continue-btn');
+            
+            const modal = document.getElementById('modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            
+            const accountSearchStep = document.getElementById('account-search-step');
+            const accountFoundStep = document.getElementById('account-found-step');
+            const syncStep = document.getElementById('sync-step');
+            
+            const usernameInput = document.getElementById('username-input');
+            const searchBtn = document.getElementById('search-btn');
+            const foundUsernameEl = document.getElementById('found-username');
+            const claimBtn = document.getElementById('claim-btn');
+            const progressBar = document.getElementById('progress-bar');
+            const selectedItemsPreview = document.getElementById('selected-items-preview');
+
+            let selectedItems = new Set();
+
+            function renderItems() {
+                itemGrid.innerHTML = '';
+                if (items.length === 0) {
+                    itemGrid.innerHTML = `<p class="text-gray-400 col-span-full text-center">Нет предметов для отображения. Добавьте предметы в массив 'items'.</p>`;
+                    return;
+                }
+                items.forEach(item => {
+                    const isSelected = selectedItems.has(item.id);
+                    const card = document.createElement('div');
+                    card.className = `item-card bg-gray-800 border-2 ${isSelected ? 'selected border-yellow-400' : 'border-purple-500'} rounded-lg p-3 text-center cursor-pointer flex flex-col justify-between`;
+                    card.dataset.itemId = item.id;
+
+                    card.innerHTML = `
+                        <div>
+                            <img src="${item.imageUrl}" alt="${item.name}" class="w-full rounded-md mb-3 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/150x150/2d3748/e2e8f0?text=Error';">
+                            <h3 class="font-semibold text-sm h-10 flex items-center justify-center">${item.name}</h3>
+                        </div>
+                        <button class="select-btn mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-2 rounded-md text-sm transition-colors">
+                            ${isSelected ? 'Deselect' : 'Select'}
+                        </button>
+                    `;
+                    
+                    card.querySelector('.select-btn').addEventListener('click', (e) => {
+                       e.stopPropagation();
+                       toggleSelection(item.id);
+                    });
+                    
+                    itemGrid.appendChild(card);
+                });
+            }
+
+            function toggleSelection(itemId) {
+                const card = document.querySelector(`.item-card[data-item-id='${itemId}']`);
+                const button = card.querySelector('.select-btn');
+
+                if (selectedItems.has(itemId)) {
+                    selectedItems.delete(itemId);
+                    card.classList.remove('selected', 'border-yellow-400');
+                    card.classList.add('border-purple-500');
+                    button.textContent = 'Select';
+                } else {
+                    if (selectedItems.size < 3) {
+                        selectedItems.add(itemId);
+                        card.classList.add('selected', 'border-yellow-400');
+                        card.classList.remove('border-purple-500');
+                        button.textContent = 'Deselect';
+                    } else {
+                        // Can add a notification that max is selected
+                    }
+                }
+                updateUI();
+            }
+
+            function updateUI() {
+                selectedCountEl.textContent = selectedItems.size;
+                continueBtn.disabled = selectedItems.size !== 3;
+            }
+            
+            continueBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                resetModal();
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+            
+            searchBtn.addEventListener('click', () => {
+                const username = usernameInput.value.trim();
+                if (!username) return;
+
+                searchBtn.textContent = 'Searching...';
+                searchBtn.disabled = true;
+
+                setTimeout(() => {
+                    accountSearchStep.classList.add('hidden');
+                    accountFoundStep.classList.remove('hidden');
+                    foundUsernameEl.textContent = username;
+                    searchBtn.textContent = 'Search';
+                    searchBtn.disabled = false;
+                }, 1500);
+            });
+
+            claimBtn.addEventListener('click', () => {
+                accountFoundStep.classList.add('hidden');
+                syncStep.classList.remove('hidden');
+                
+                // Display selected items
+                selectedItemsPreview.innerHTML = '';
+                const selectedItemDetails = items.filter(item => selectedItems.has(item.id));
+                selectedItemDetails.forEach(item => {
+                    const img = document.createElement('img');
+                    img.src = item.imageUrl;
+                    img.alt = item.name;
+                    img.className = 'w-20 h-20 object-cover rounded-md border-2 border-gray-600';
+                    img.onerror = () => {
+                        img.src = 'https://placehold.co/80x80/2d3748/e2e8f0?text=Error';
+                    };
+                    selectedItemsPreview.appendChild(img);
+                });
+
+                // Simulate progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.floor(Math.random() * 10) + 5;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                         setTimeout(() => {
+                             syncStep.querySelector('h2').textContent = 'Sync Complete!';
+                         }, 500);
+                    }
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress}%`;
+                }, 400);
+            });
+
+            function resetModal() {
+                 accountSearchStep.classList.remove('hidden');
+                 accountFoundStep.classList.add('hidden');
+                 syncStep.classList.add('hidden');
+                 usernameInput.value = '';
+                 progressBar.style.width = `0%`;
+                 progressBar.textContent = `0%`;
+                 syncStep.querySelector('h2').textContent = 'Syncing items...';
+            }
+
+            renderItems();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
