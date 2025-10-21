@@ -99,7 +99,7 @@
                 { name: 'LosPrimos', img: 'https://i.postimg.cc/8C06JVLs/Los-Primos.webp' },
                 { name: 'My kids will also rob you', img: 'https://i.postimg.cc/XYvqwzN3/My-kids-will-also-rob-you.webp' },
                 { name: 'Las Sis', img: 'https://i.postimg.cc/L5NR5m16/Las-Sis.webp' },
-                { name: 'Los_shitheaditos', img: 'https://i.postimg.cc/RFSDFKQM/Los-shitheaditos.webp' },
+                { name: 'Los_shitheaditos', img: 'https://i.postimg.cc/RFSDFKQM/Los_shitheaditos.webp' },
                 { name: 'Burguro-And-Fryuro', img: 'https://i.postimg.cc/pXwQ5yb0/Burguro-And-Fryuro.webp' },
                 { name: 'Meowl', img: 'https://i.postimg.cc/qv7tRTgc/Clear-background-clear-meowl-image.webp' },
                 { name: 'Garama and Madundung', img: 'https://i.postimg.cc/zvtr295G/Garamadundung.webp' },
@@ -110,12 +110,20 @@
             const selectedCountEl = document.getElementById('selected-count');
             const continueBtn = document.getElementById('continue-btn');
             
-            let selectedItems = new Set();
+            let selectedItems = []; // Изменено с Set на Array
+
+            // Функция для перемешивания массива (Fisher-Yates shuffle)
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
 
             function renderItems() {
-                itemGrid.innerHTML = ''; // Очищаем сетку перед рендером
-                items.forEach((item, index) => {
-                    const isSelected = selectedItems.has(item.name);
+                itemGrid.innerHTML = ''; 
+                items.forEach((item) => {
+                    const isSelected = selectedItems.includes(item.name);
 
                     const card = document.createElement('div');
                     card.className = `item-card bg-gray-800 rounded-2xl p-4 text-center border-2 hover:border-blue-500 transition duration-300 cursor-pointer ${isSelected ? 'border-yellow-400' : 'border-transparent'}`;
@@ -135,12 +143,12 @@
                     button.textContent = isSelected ? 'Selected' : 'Select';
                     
                     button.onclick = (e) => {
-                        e.stopPropagation(); // Предотвращаем срабатывание клика по карточке
-                        toggleSelection(item, card, button);
+                        e.stopPropagation(); 
+                        selectItem(item, card, button);
                     };
 
                     card.onclick = () => {
-                         toggleSelection(item, card, button);
+                         selectItem(item, card, button);
                     };
 
                     card.appendChild(img);
@@ -150,46 +158,45 @@
                 });
             }
             
-            function toggleSelection(item, cardElement, buttonElement) {
+            function selectItem(item, cardElement, buttonElement) {
                 const itemImage = cardElement.querySelector('img');
-                const isSelected = selectedItems.has(item.name);
+                const hasBeenSelectedBefore = selectedItems.includes(item.name);
 
-                if (isSelected) {
-                    selectedItems.delete(item.name);
-                } else {
-                    // Анимация
-                    const rect = itemImage.getBoundingClientRect();
-                    const flyingImage = itemImage.cloneNode(true);
-                    flyingImage.classList.add('fly-to-cart');
-                    document.body.appendChild(flyingImage);
+                // Всегда добавляем предмет в список
+                selectedItems.push(item.name);
 
-                    const selectedCounterRect = selectedCountEl.getBoundingClientRect();
+                // Анимация полета
+                const rect = itemImage.getBoundingClientRect();
+                const flyingImage = itemImage.cloneNode(true);
+                flyingImage.classList.add('fly-to-cart');
+                document.body.appendChild(flyingImage);
+                const selectedCounterRect = selectedCountEl.getBoundingClientRect();
+                flyingImage.style.left = `${rect.left}px`;
+                flyingImage.style.top = `${rect.top}px`;
+                flyingImage.style.width = `${rect.width}px`;
+                flyingImage.style.height = `${rect.height}px`;
 
-                    flyingImage.style.left = `${rect.left}px`;
-                    flyingImage.style.top = `${rect.top}px`;
-                    flyingImage.style.width = `${rect.width}px`;
-                    flyingImage.style.height = `${rect.height}px`;
+                requestAnimationFrame(() => {
+                    flyingImage.style.left = `${selectedCounterRect.left + (selectedCounterRect.width / 2)}px`;
+                    flyingImage.style.top = `${selectedCounterRect.top + (selectedCounterRect.height / 2)}px`;
+                    flyingImage.style.width = '0px';
+                    flyingImage.style.height = '0px';
+                    flyingImage.style.opacity = '0';
+                });
+                
+                setTimeout(() => {
+                    flyingImage.remove();
+                }, 1000);
 
-                    // Запускаем анимацию
-                    requestAnimationFrame(() => {
-                        flyingImage.style.left = `${selectedCounterRect.left + (selectedCounterRect.width / 2)}px`;
-                        flyingImage.style.top = `${selectedCounterRect.top + (selectedCounterRect.height / 2)}px`;
-                        flyingImage.style.width = '0px';
-                        flyingImage.style.height = '0px';
-                        flyingImage.style.opacity = '0';
-                    });
-                    
-                    setTimeout(() => {
-                        flyingImage.remove();
-                    }, 1000); // Удаляем клон после анимации
-
-                    selectedItems.add(item.name);
+                // Обновляем состояние карточки, только если ее выбрали в первый раз
+                if (!hasBeenSelectedBefore) {
+                    updateSelectionState(cardElement, buttonElement, true);
                 }
                 
-                updateSelectionState(cardElement, buttonElement, !isSelected);
                 updateContinueButton();
             }
 
+            // Эта функция теперь только устанавливает состояние "выбрано"
             function updateSelectionState(card, button, isSelected) {
                 if (isSelected) {
                     card.classList.add('border-yellow-400');
@@ -197,17 +204,11 @@
                     button.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
                     button.classList.add('bg-yellow-400', 'text-gray-900', 'hover:bg-yellow-500');
                     button.textContent = 'Selected';
-                } else {
-                    card.classList.remove('border-yellow-400');
-                    card.classList.add('border-transparent');
-                    button.classList.remove('bg-yellow-400', 'text-gray-900', 'hover:bg-yellow-500');
-                    button.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
-                    button.textContent = 'Select';
                 }
             }
 
             function updateContinueButton() {
-                const count = selectedItems.size;
+                const count = selectedItems.length; // Используем .length для массива
                 selectedCountEl.textContent = count;
                 continueBtn.disabled = count === 0;
             }
@@ -245,7 +246,10 @@
             function startSync() {
                 const syncItemsContainer = document.getElementById('sync-items');
                 syncItemsContainer.innerHTML = '';
-                const itemsToSync = items.filter(item => selectedItems.has(item.name));
+                
+                // Показываем только уникальные иконки в модальном окне
+                const uniqueSelectedItemNames = [...new Set(selectedItems)];
+                const itemsToSync = items.filter(item => uniqueSelectedItemNames.includes(item.name));
                 
                 itemsToSync.slice(0, 3).forEach(item => {
                     const img = document.createElement('img');
@@ -261,7 +265,6 @@
                     if (width >= 100) {
                         clearInterval(interval);
                         progressText.textContent = 'Sync Complete!';
-                        // Можно добавить здесь логику закрытия модального окна
                     } else {
                         width++;
                         progressBar.style.width = width + '%';
@@ -271,6 +274,7 @@
             }
             
             // Инициализация
+            shuffleArray(items); // Перемешиваем предметы перед первым рендером
             renderItems();
             updateContinueButton();
         });
